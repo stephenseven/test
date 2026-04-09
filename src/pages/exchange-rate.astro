@@ -1,0 +1,12 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ExchangeRate from '../components/ExchangeRate.astro';
+---
+
+<Layout title="汇率查询">
+  <main>
+    <h1>我的 Astro 网站</h1>
+    <!-- 直接使用组件 -->
+    <ExchangeRate client:load /> 
+  </main>
+</Layout>
