@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>裁剪万年历</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        overflow: hidden; /* 禁止滚动 */
+        background: white;
+      }
+
+      /* 固定高度容器，超出部分直接裁剪 */
+      .clip-box {
+        width: 100%;
+        height: 520px; /* 固定高度，只显示日历部分 */
+        overflow: hidden; /* 超出的直接裁剪 */
+        position: relative;
+      }
+
+      .cropped-iframe {
+        position: absolute;
+        top: -110px; /* 向上移，隐藏顶部导航 */
+        left: 0;
+        width: 100%;
+        height: 700px; /* 高度大于容器，超出被裁剪 */
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="clip-box">
+      <iframe class="cropped-iframe" src="https://tools.2345.com/rili"></iframe>
+    </div>
+  </body>
+</html>

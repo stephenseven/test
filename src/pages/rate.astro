@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>实时汇率 - 美元/欧元 现汇买入价</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #f5f5f5;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+        font-family: "Lato", "Segoe UI", sans-serif;
+        padding: 20px;
+        padding-top: 30px;
+      }
+
+      .container {
+        max-width: 1200px;
+        width: 100%;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        padding: 35px;
+      }
+
+      h2 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 10px;
+        font-size: 24px;
+      }
+
+      .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 20px;
+        font-size: 14px;
+      }
+
+      .section-one {
+        margin-bottom: 80px;
+      }
+
+      .note {
+        text-align: center;
+        font-size: 13px;
+        color: #888;
+        margin-top: 16px;
+      }
+
+      #rate-table {
+        width: 100%;
+        table-layout: fixed;
+        border-collapse: separate;
+        border-spacing: 0;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-top: 10px;
+        font-family: "Lato", sans-serif;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+      }
+
+      th, td {
+        padding: 14px 12px;
+        text-align: center;
+        border: 1px solid #e2e2e2;
+        font-size: 18px;
+      }
+
+      th {
+        background-color: #ff9900;
+        color: white;
+        font-weight: 600;
+        font-size: 18px;
+      }
+
+      td {
+        background-color: #fff;
+        padding: 9px 12px;
+      }
+
+      .quote-value {
+        border: 1px solid #999;
+        padding: 5px 12px;
+        border-radius: 6px;
+        display: inline-block;
+        font-weight: 500;
+        background-color: #fef7e0;
+      }
+
+      .chart-section {
+        margin-bottom: 65px;
+      }
+
+      .chart-section:last-of-type {
+        margin-bottom: 0;
+      }
+
+      .chart-container {
+        padding: 20px;
+        background: #fafafa;
+        border-radius: 12px;
+        border: 1px solid #e0e0e0;
+      }
+
+      .chart-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 15px;
+        text-align: center;
+      }
+
+      .chart-badge {
+        background: #e8f5e9;
+        color: #2e7d32;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: normal;
+        margin-left: 10px;
+      }
+
+      .chart-badge.official {
+        background: #e3f2fd;
+        color: #1565c0;
+      }
+
+      .chart-wrapper {
+        position: relative;
+        height: 350px;
+        width: 100%;
+      }
+
+      .chart-controls {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+      }
+
+      .chart-btn {
+        padding: 8px 20px;
+        border: 1px solid #ff9900;
+        background: white;
+        color: #ff9900;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s;
+      }
+
+      .chart-btn:hover {
+        background: #fff3e0;
+      }
+
+      .chart-btn.active {
+        background: #ff9900;
+        color: white;
+      }
+
+      .chart-note {
+        text-align: center;
+        font-size: 12px;
+        color: #999;
+        margin-top: 12px;
+      }
+
+      .refresh-btn {
+        padding: 8px 20px;
+        background: #ff9900;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .refresh-btn:hover {
+        background: #e68a00;
+      }
+
+      .forecast-container {
+        padding: 20px;
+        background: linear-gradient(135deg, #f0f4f8 0%, #e8edf2 100%);
+        border-radius: 12px;
+        border: 1px solid #90caf9;
+      }
+
+      .disclaimer {
+        text-align: center;
+        font-size: 12px;
+        color: #1565c0;
+        margin-top: 15px;
+        padding: 8px;
+        background: #e3f2fd;
+        border-radius: 8px;
+        border-left: 3px solid #2196f3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>💱 实时外汇牌价</h2>
+      <div class="subtitle">美元/欧元 · 现汇买入价</div>
+
+      <div class="section-one">
+        <table id="rate-table">
+          <thead>
+            <tr>
+              <th>货币</th>
+              <th>现汇买入价</th>
+              <th>报价汇率</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>美元 (USD)</td>
+              <td id="usd-original">加载中...</td>
+              <td id="usd-quote">--</td>
+            </tr>
+            <tr>
+              <td>欧元 (EUR)</td>
+              <td id="eur-original">加载中...</td>
+              <td id="eur-quote">--</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="note">
+          数据来源：中国银行 | 报价汇率 = (买入价/100 - 0.15) 向下取整0.05
+        </div>
+      </div>
+
+      <div class="chart-section">
+        <div class="chart-container">
+          <div class="chart-title">
+            📈 近30天 · 现汇买入价走势
+            <span class="chart-badge">短期趋势</span>
+          </div>
+          <div class="chart-controls" id="daily-controls">
+            <button class="chart-btn active" data-currency="USD">美元 (USD/CNY)</button>
+            <button class="chart-btn" data-currency="EUR">欧元 (EUR/CNY)</button>
+            <button class="chart-btn" data-currency="BOTH">对比查看</button>
+            <button class="refresh-btn" id="refresh-daily">刷新数据</button>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="dailyChart"></canvas>
+          </div>
+          <div class="chart-note" id="daily-status">正在生成30天数据...</div>
+        </div>
+      </div>
+
+      <div class="chart-section">
+        <div class="chart-container">
+          <div class="chart-title">
+            📊 近3年（36个月）· 现汇买入价走势
+            <span class="chart-badge">长期趋势</span>
+          </div>
+          <div class="chart-controls" id="monthly-controls">
+            <button class="chart-btn active" data-currency="USD">美元 (USD/CNY)</button>
+            <button class="chart-btn" data-currency="EUR">欧元 (EUR/CNY)</button>
+            <button class="chart-btn" data-currency="BOTH">对比查看</button>
+            <button class="refresh-btn" id="refresh-monthly">刷新数据</button>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="monthlyChart"></canvas>
+          </div>
+          <div class="chart-note" id="monthly-status">正在生成36个月数据...</div>
+        </div>
+      </div>
+
+      <div class="chart-section">
+        <div class="forecast-container">
+          <div class="chart-title">
+            🏦 中国银行远期结售汇牌价 · 未来12个月
+            <span class="chart-badge official">官方数据</span>
+          </div>
+          <div class="chart-controls" id="forecast-controls">
+            <button class="chart-btn active" data-currency="USD">美元 (USD/CNY)</button>
+            <button class="chart-btn" data-currency="EUR">欧元 (EUR/CNY)</button>
+            <button class="chart-btn" data-currency="BOTH">对比查看</button>
+            <button class="refresh-btn" id="refresh-forecast">刷新数据</button>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="forecastChart"></canvas>
+          </div>
+          <div class="chart-note" id="forecast-status">正在加载中国银行远期数据...</div>
+          <div class="disclaimer">
+            ℹ️ 数据来源：中国银行远期结售汇牌价（买入价）| 汇率日期：<span id="rate-date">加载中...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ==================== 全局变量 ====================
+      let dailyChart = null;
+      let monthlyChart = null;
+      let forecastChart = null;
+      let dailyUsdData = [];
+      let dailyEurData = [];
+      let monthlyUsdData = [];
+      let monthlyEurData = [];
+      let forecastUsdData = [];
+      let forecastEurData = [];
+      let currentDailyCurrency = "USD";
+      let currentMonthlyCurrency = "USD";
+      let currentForecastCurrency = "USD";
+      let forwardRatesData = null;
+
+      const TANSHU_API_KEY = "be2e9fba50048b175632bde0c93f0c61";
+
+      // ==================== 页面初始化 ====================
+      window.addEventListener("DOMContentLoaded", async function () {
+        await fetchExchangeRates();
+        await generateDailyData();
+        await generateMonthlyData();
+        fetchForwardRates();
+        drawDailyChart("USD");
+        drawMonthlyChart("USD");
+        initControls();
+      });
+
+      // ==================== 日期格式化 ====================
+      function formatDateYMD(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}${month}${day}`;
+      }
+
+      function formatDisplayDate(dateStr) {
+        const month = dateStr.substring(5, 7);
+        const day = dateStr.substring(8, 10);
+        return `${parseInt(month)}/${parseInt(day)}`;
+      }
+
+      function formatMonthDisplay(dateStr) {
+        const year = dateStr.substring(0, 4);
+        const month = dateStr.substring(5, 7);
+        return `${year}/${month}`;
+      }
+
+      function formatDayMonth(date) {
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      }
+
+      function formatMonthYear(date) {
+        return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}`;
+      }
+
+      // ==================== 远期数据 ====================
+      async function fetchForwardRates() {
+        const statusEl = document.getElementById("forecast-status");
+        const dateEl = document.getElementById("rate-date");
+        statusEl.innerText = "正在从中国银行获取远期数据...";
+        try {
+          const response = await fetch("https://boc-api.onrender.com/api/forward-rates");
+          if (response.ok) {
+            forwardRatesData = await response.json();
+            dateEl.innerText = forwardRatesData.rateDate || forwardRatesData.date || "最新";
+            statusEl.innerText = `数据来源：中国银行远期牌价 | 汇率日期：${forwardRatesData.rateDate || "最新"}`;
+            generateForecastFromForwardRates();
+            drawForecastChart(currentForecastCurrency);
+          } else {
+            throw new Error("API 不可用");
+          }
+        } catch (error) {
+          console.log("使用静态备份数据");
+          forwardRatesData = getStaticForwardRates();
+          dateEl.innerText = forwardRatesData.rateDate;
+          statusEl.innerText = `使用静态备份数据 | 汇率日期：${forwardRatesData.rateDate}`;
+          generateForecastFromForwardRates();
+          drawForecastChart(currentForecastCurrency);
+        }
+      }
+
+      function getStaticForwardRates() {
+        return {
+          rateDate: "2026-04-09",
+          rates: {
+            USD: { spot: 681.615, m1: 680.545, m2: 679.075, m3: 677.85, m4: 676.5595, m5: 675.2273, m6: 674.02, m7: 672.6699, m8: 671.4198, m9: 670.21, m10: 668.8897, m11: 667.8412, m12: 666.715 },
+            EUR: { spot: 794.4482, m1: 794.0157, m2: 793.4942, m3: 792.9896, m4: 792.4554, m5: 791.7521, m6: 791.1971, m7: 790.3334, m8: 789.6595, m9: 789.1859, m10: 788.3705, m11: 787.7871, m12: 787.2314 }
+          }
+        };
+      }
+
+      function generateForecastFromForwardRates() {
+        if (!forwardRatesData || !forwardRatesData.rates) return;
+        const today = new Date();
+        const usdRates = forwardRatesData.rates.USD;
+        const eurRates = forwardRatesData.rates.EUR;
+        const periods = [
+          { key: "spot", months: 0 }, { key: "m1", months: 1 }, { key: "m2", months: 2 }, { key: "m3", months: 3 },
+          { key: "m4", months: 4 }, { key: "m5", months: 5 }, { key: "m6", months: 6 }, { key: "m7", months: 7 },
+          { key: "m8", months: 8 }, { key: "m9", months: 9 }, { key: "m10", months: 10 }, { key: "m11", months: 11 }, { key: "m12", months: 12 }
+        ];
+        forecastUsdData = [];
+        forecastEurData = [];
+        periods.forEach((p) => {
+          const date = new Date(today);
+          date.setMonth(date.getMonth() + p.months);
+          const monthLabel = p.months === 0 ? `${formatMonthYear(date)} (现价)` : formatMonthYear(date);
+          if (usdRates[p.key]) forecastUsdData.push({ date: monthLabel, rate: usdRates[p.key] / 100, isForecast: p.months > 0 });
+          if (eurRates[p.key]) forecastEurData.push({ date: monthLabel, rate: eurRates[p.key] / 100, isForecast: p.months > 0 });
+        });
+      }
+
+      // ==================== 实时汇率 ====================
+      async function fetchExchangeRates() {
+        const API_URL = "https://smkjzgyhss.market.alicloudapi.com/exchange_rate/realtime?code=USD,EUR";
+        const APPCODE = "39cb76a2af6e4bf288742eb934f6dc4e";
+        try {
+          const response = await fetch(API_URL, { method: "GET", headers: { Authorization: "APPCODE " + APPCODE } });
+          const result = await response.json();
+          if (result.success && result.data && result.data.list) {
+            const list = result.data.list;
+            let usdRate = null, eurRate = null;
+            list.forEach((item) => {
+              if (item.code === "USD") usdRate = item.hui_in;
+              if (item.code === "EUR") eurRate = item.hui_in;
+            });
+            if (usdRate) {
+              document.getElementById("usd-original").innerText = (usdRate / 100).toFixed(2);
+              document.getElementById("usd-quote").innerHTML = `<span class="quote-value">${calculateQuoteRate(usdRate)}</span>`;
+              window.currentUsdRate = usdRate / 100;
+            }
+            if (eurRate) {
+              document.getElementById("eur-original").innerText = (eurRate / 100).toFixed(2);
+              document.getElementById("eur-quote").innerHTML = `<span class="quote-value">${calculateQuoteRate(eurRate)}</span>`;
+              window.currentEurRate = eurRate / 100;
+            }
+          }
+        } catch (err) {
+          console.error("实时汇率获取失败:", err);
+        }
+      }
+
+      function calculateQuoteRate(originalPriceHundred) {
+        const step1 = originalPriceHundred / 100;
+        const step2 = step1 - 0.15;
+        return (Math.floor(step2 / 0.05) * 0.05).toFixed(2);
+      }
+
+      // ==================== 30天数据 ====================
+      async function generateDailyData() {
+        const statusEl = document.getElementById('daily-status');
+        statusEl.innerText = '正在从 TanshuAPI 获取真实历史数据...';
+        const today = new Date();
+        const startDate = new Date(today);
+        startDate.setDate(today.getDate() - 30);
+        const startStr = formatDateYMD(startDate);
+        const endStr = formatDateYMD(today);
+        try {
+          const [usdRes, eurRes] = await Promise.all([
+            fetch(`https://api.tanshuapi.com/api/bank_exchange/v1/history?key=${TANSHU_API_KEY}&code=USD&start_date=${startStr}&end_date=${endStr}`),
+            fetch(`https://api.tanshuapi.com/api/bank_exchange/v1/history?key=${TANSHU_API_KEY}&code=EUR&start_date=${startStr}&end_date=${endStr}`)
+          ]);
+          const usdData = await usdRes.json();
+          const eurData = await eurRes.json();
+          if (usdData.code === 1 && usdData.data && usdData.data.list) {
+            const list = usdData.data.list.sort((a, b) => a.publish_time.localeCompare(b.publish_time));
+            dailyUsdData = list.map(item => ({ date: formatDisplayDate(item.publish_time), rate: parseFloat(item.buying_rate) / 100 }));
+          } else throw new Error('美元数据获取失败');
+          if (eurData.code === 1 && eurData.data && eurData.data.list) {
+            const list = eurData.data.list.sort((a, b) => a.publish_time.localeCompare(b.publish_time));
+            dailyEurData = list.map(item => ({ date: formatDisplayDate(item.publish_time), rate: parseFloat(item.buying_rate) / 100 }));
+          } else throw new Error('欧元数据获取失败');
+          const baseUsd = window.currentUsdRate || (dailyUsdData.length > 0 ? dailyUsdData[dailyUsdData.length - 1].rate : 7.25);
+          const baseEur = window.currentEurRate || (dailyEurData.length > 0 ? dailyEurData[dailyEurData.length - 1].rate : 7.85);
+          statusEl.innerText = `近30天现汇买入价（真实历史数据）| 当前: USD ${baseUsd.toFixed(4)} / EUR ${baseEur.toFixed(4)}`;
+        } catch (error) {
+          console.error('30天数据获取失败:', error);
+          generateDailyDataFallback();
+        }
+      }
+
+      function generateDailyDataFallback() {
+        const dates = [], usdRates = [], eurRates = [];
+        const today = new Date();
+        const baseUsd = window.currentUsdRate || 7.25;
+        const baseEur = window.currentEurRate || 7.85;
+        for (let i = 29; i >= 0; i--) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - i);
+          dates.push(formatDayMonth(date));
+          const variation = Math.sin(i * 0.4) * 0.008 + (Math.random() - 0.5) * 0.006;
+          usdRates.push(baseUsd * (1 + variation));
+          eurRates.push(baseEur * (1 + variation * 1.2));
+        }
+        dailyUsdData = dates.map((date, i) => ({ date, rate: usdRates[i] }));
+        dailyEurData = dates.map((date, i) => ({ date, rate: eurRates[i] }));
+        document.getElementById('daily-status').innerText = `近30天现汇买入价（模拟数据）| 当前: USD ${baseUsd.toFixed(4)} / EUR ${baseEur.toFixed(4)}`;
+      }
+
+      // ==================== 36个月数据 ====================
+      async function generateMonthlyData() {
+        const statusEl = document.getElementById('monthly-status');
+        statusEl.innerText = '正在从 TanshuAPI 获取真实历史数据...';
+        const today = new Date();
+        const startDate = new Date(today);
+        startDate.setMonth(today.getMonth() - 36);
+        try {
+          const usdAllData = await fetchHistoryInBatches('USD', startDate, today);
+          const eurAllData = await fetchHistoryInBatches('EUR', startDate, today);
+          monthlyUsdData = sampleMonthlyData(usdAllData);
+          monthlyEurData = sampleMonthlyData(eurAllData);
+          const currentUsd = window.currentUsdRate || (monthlyUsdData.length > 0 ? monthlyUsdData[monthlyUsdData.length - 1].rate : 7.25);
+          const currentEur = window.currentEurRate || (monthlyEurData.length > 0 ? monthlyEurData[monthlyEurData.length - 1].rate : 7.85);
+          statusEl.innerText = `近3年（36个月）现汇买入价（真实历史数据）| 当前: USD ${currentUsd.toFixed(4)} / EUR ${currentEur.toFixed(4)}`;
+        } catch (error) {
+          console.error('36个月数据获取失败:', error);
+          generateMonthlyDataFallback();
+        }
+      }
+
+      async function fetchHistoryInBatches(currency, startDate, endDate) {
+        const allData = [];
+        let currentStart = new Date(startDate);
+        while (currentStart < endDate) {
+          let currentEnd = new Date(currentStart);
+          currentEnd.setDate(currentStart.getDate() + 89);
+          if (currentEnd > endDate) currentEnd = new Date(endDate);
+          const startStr = formatDateYMD(currentStart);
+          const endStr = formatDateYMD(currentEnd);
+          const response = await fetch(`https://api.tanshuapi.com/api/bank_exchange/v1/history?key=${TANSHU_API_KEY}&code=${currency}&start_date=${startStr}&end_date=${endStr}`);
+          const data = await response.json();
+          if (data.code === 1 && data.data && data.data.list) allData.push(...data.data.list);
+          currentStart = new Date(currentEnd);
+          currentStart.setDate(currentStart.getDate() + 1);
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        return allData.sort((a, b) => a.publish_time.localeCompare(b.publish_time)).filter((item, index, arr) => index === 0 || item.publish_time !== arr[index - 1].publish_time);
+      }
+
+      function sampleMonthlyData(allData) {
+        const monthlyMap = new Map();
+        allData.forEach(item => {
+          const yearMonth = item.publish_time.substring(0, 7);
+          if (!monthlyMap.has(yearMonth)) {
+            monthlyMap.set(yearMonth, { date: formatMonthDisplay(item.publish_time), rate: parseFloat(item.buying_rate) / 100 });
+          }
+        });
+        return Array.from(monthlyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+      }
+
+      function generateMonthlyDataFallback() {
+        const months = [], usdRates = [], eurRates = [];
+        const today = new Date();
+        const currentUsd = window.currentUsdRate || 7.25;
+        const currentEur = window.currentEurRate || 7.85;
+        for (let i = 35; i >= 0; i--) {
+          const date = new Date(today);
+          date.setMonth(date.getMonth() - i);
+          months.push(formatMonthYear(date));
+          const monthsAgo = i;
+          let usdRate, eurRate;
+          if (monthsAgo > 30) {
+            usdRate = 6.35 + Math.sin(monthsAgo * 0.3) * 0.06 + (Math.random() * 0.03 - 0.015);
+            eurRate = 6.95 + Math.sin(monthsAgo * 0.25) * 0.1 + (Math.random() * 0.04 - 0.02);
+          } else if (monthsAgo > 18) {
+            usdRate = 6.65 + Math.sin(monthsAgo * 0.35) * 0.12 + (Math.random() * 0.04 - 0.02);
+            eurRate = 7.3 + Math.sin(monthsAgo * 0.3) * 0.15 + (Math.random() * 0.05 - 0.025);
+          } else if (monthsAgo > 8) {
+            usdRate = 7.0 + Math.sin(monthsAgo * 0.4) * 0.1 + (Math.random() * 0.03 - 0.015);
+            eurRate = 7.65 + Math.sin(monthsAgo * 0.35) * 0.12 + (Math.random() * 0.04 - 0.02);
+          } else {
+            const progress = (8 - monthsAgo) / 8;
+            usdRate = 7.18 + (currentUsd - 7.18) * progress + Math.sin(monthsAgo * 0.8) * 0.015;
+            eurRate = 7.78 + (currentEur - 7.78) * progress + Math.sin(monthsAgo * 0.7) * 0.02;
+          }
+          usdRates.push(Math.max(6.25, Math.min(7.4, usdRate)));
+          eurRates.push(Math.max(6.8, Math.min(8.1, eurRate)));
+        }
+        monthlyUsdData = months.map((month, i) => ({ date: month, rate: usdRates[i] }));
+        monthlyEurData = months.map((month, i) => ({ date: month, rate: eurRates[i] }));
+        document.getElementById('monthly-status').innerText = `近3年（36个月）现汇买入价（模拟数据）| 当前: USD ${currentUsd.toFixed(4)} / EUR ${currentEur.toFixed(4)}`;
+      }
+
+      // ==================== 控制 ====================
+      function initControls() {
+        document.querySelectorAll("#daily-controls .chart-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            document.querySelectorAll("#daily-controls .chart-btn").forEach((b) => b.classList.remove("active"));
+            this.classList.add("active");
+            currentDailyCurrency = this.dataset.currency;
+            drawDailyChart(currentDailyCurrency);
+          });
+        });
+        document.querySelectorAll("#monthly-controls .chart-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            document.querySelectorAll("#monthly-controls .chart-btn").forEach((b) => b.classList.remove("active"));
+            this.classList.add("active");
+            currentMonthlyCurrency = this.dataset.currency;
+            drawMonthlyChart(currentMonthlyCurrency);
+          });
+        });
+        document.querySelectorAll("#forecast-controls .chart-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            document.querySelectorAll("#forecast-controls .chart-btn").forEach((b) => b.classList.remove("active"));
+            this.classList.add("active");
+            currentForecastCurrency = this.dataset.currency;
+            drawForecastChart(currentForecastCurrency);
+          });
+        });
+        document.getElementById("refresh-daily").addEventListener("click", async () => {
+          await generateDailyData();
+          drawDailyChart(currentDailyCurrency);
+        });
+        document.getElementById("refresh-monthly").addEventListener("click", async () => {
+          await generateMonthlyData();
+          drawMonthlyChart(currentMonthlyCurrency);
+        });
+        document.getElementById("refresh-forecast").addEventListener("click", () => fetchForwardRates());
+      }
+
+      // ==================== 绘制图表 ====================
+      function drawDailyChart(currency) {
+        const ctx = document.getElementById("dailyChart").getContext("2d");
+        if (dailyChart) dailyChart.destroy();
+        const { labels, datasets } = prepareChartData(currency, dailyUsdData, dailyEurData);
+        dailyChart = createChart(ctx, labels, datasets);
+      }
+
+      function drawMonthlyChart(currency) {
+        const ctx = document.getElementById("monthlyChart").getContext("2d");
+        if (monthlyChart) monthlyChart.destroy();
+        const { labels, datasets } = prepareChartData(currency, monthlyUsdData, monthlyEurData);
+        monthlyChart = createChart(ctx, labels, datasets);
+      }
+
+      function drawForecastChart(currency) {
+        const ctx = document.getElementById("forecastChart").getContext("2d");
+        if (forecastChart) forecastChart.destroy();
+        let labels = [], datasets = [];
+        if (currency === "USD") {
+          labels = forecastUsdData.map((d) => d.date);
+          datasets = [{
+            label: "美元 远期买入价 (USD/CNY)", data: forecastUsdData.map((d) => d.rate.toFixed(4)),
+            borderColor: "#1565C0", backgroundColor: "rgba(21, 101, 192, 0.08)", borderWidth: 2.5,
+            pointRadius: (ctx) => (ctx.dataIndex === 0 ? 4 : 3), pointHoverRadius: 6,
+            pointBackgroundColor: (ctx) => ctx.dataIndex === 0 ? "#ff9800" : "#1565C0",
+            pointBorderColor: "#fff", pointBorderWidth: 2, tension: 0.2, fill: true
+          }];
+        } else if (currency === "EUR") {
+          labels = forecastEurData.map((d) => d.date);
+          datasets = [{
+            label: "欧元 远期买入价 (EUR/CNY)", data: forecastEurData.map((d) => d.rate.toFixed(4)),
+            borderColor: "#2E7D32", backgroundColor: "rgba(46, 125, 50, 0.08)", borderWidth: 2.5,
+            pointRadius: (ctx) => (ctx.dataIndex === 0 ? 4 : 3), pointHoverRadius: 6,
+            pointBackgroundColor: (ctx) => ctx.dataIndex === 0 ? "#ff9800" : "#2E7D32",
+            pointBorderColor: "#fff", pointBorderWidth: 2, tension: 0.2, fill: true
+          }];
+        } else {
+          labels = forecastUsdData.map((d) => d.date);
+          datasets = [
+            { label: "美元 (USD/CNY)", data: forecastUsdData.map((d) => d.rate.toFixed(4)), borderColor: "#1565C0", backgroundColor: "transparent", borderWidth: 2.5, pointRadius: (ctx) => (ctx.dataIndex === 0 ? 4 : 2), pointHoverRadius: 6, tension: 0.2 },
+            { label: "欧元 (EUR/CNY)", data: forecastEurData.map((d) => d.rate.toFixed(4)), borderColor: "#2E7D32", backgroundColor: "transparent", borderWidth: 2.5, pointRadius: (ctx) => (ctx.dataIndex === 0 ? 4 : 2), pointHoverRadius: 6, tension: 0.2 }
+          ];
+        }
+        forecastChart = createChart(ctx, labels, datasets);
+      }
+
+      function prepareChartData(currency, usdData, eurData) {
+        let labels = [], datasets = [];
+        if (currency === "USD") {
+          labels = usdData.map((d) => d.date);
+          datasets = [{ label: "美元 现汇买入价 (USD/CNY)", data: usdData.map((d) => d.rate.toFixed(4)), borderColor: "#2196F3", backgroundColor: "rgba(33, 150, 243, 0.08)", borderWidth: 2.5, pointRadius: 2, pointHoverRadius: 6, tension: 0.3, fill: true }];
+        } else if (currency === "EUR") {
+          labels = eurData.map((d) => d.date);
+          datasets = [{ label: "欧元 现汇买入价 (EUR/CNY)", data: eurData.map((d) => d.rate.toFixed(4)), borderColor: "#4CAF50", backgroundColor: "rgba(76, 175, 80, 0.08)", borderWidth: 2.5, pointRadius: 2, pointHoverRadius: 6, tension: 0.3, fill: true }];
+        } else {
+          const minLength = Math.min(usdData.length, eurData.length);
+          labels = usdData.slice(0, minLength).map((d) => d.date);
+          datasets = [
+            { label: "美元 (USD/CNY)", data: usdData.slice(0, minLength).map((d) => d.rate.toFixed(4)), borderColor: "#2196F3", backgroundColor: "transparent", borderWidth: 2.5, pointRadius: 1.5, pointHoverRadius: 6, tension: 0.3 },
+            { label: "欧元 (EUR/CNY)", data: eurData.slice(0, minLength).map((d) => d.rate.toFixed(4)), borderColor: "#4CAF50", backgroundColor: "transparent", borderWidth: 2.5, pointRadius: 1.5, pointHoverRadius: 6, tension: 0.3 }
+          ];
+        }
+        return { labels, datasets };
+      }
+
+      function createChart(ctx, labels, datasets) {
+        return new Chart(ctx, {
+          type: "line", data: { labels, datasets },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: "index", intersect: false },
+            plugins: {
+              legend: { position: "top", labels: { usePointStyle: true, boxWidth: 30, font: { size: 12 } } },
+              tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${parseFloat(context.parsed.y).toFixed(4)}` } }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { maxRotation: 45, minRotation: 45, font: { size: 11 } } },
+              y: { beginAtZero: false, grid: { color: "rgba(0, 0, 0, 0.05)" }, ticks: { callback: (value) => value.toFixed(2) } }
+            }
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
