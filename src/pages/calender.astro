@@ -2,7 +2,10 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
     <title>裁剪万年历</title>
     <style>
       * {
@@ -11,32 +14,54 @@
         box-sizing: border-box;
       }
 
+      /* 彻底禁用滚动条 */
+      html,
       body {
-        overflow: hidden; /* 禁止滚动 */
+        overflow: hidden !important;
         background: white;
+        height: 100%;
+      }
+
+      /* 隐藏所有滚动条（兼容各种浏览器） */
+      body::-webkit-scrollbar {
+        display: none !important;
+      }
+      html::-webkit-scrollbar {
+        display: none !important;
+      }
+      body {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
       }
 
       /* 固定高度容器，超出部分直接裁剪 */
       .clip-box {
         width: 100%;
-        height: 520px; /* 固定高度，只显示日历部分 */
-        overflow: hidden; /* 超出的直接裁剪 */
+        height: 620px;
+        overflow: hidden;
         position: relative;
       }
 
       .cropped-iframe {
         position: absolute;
-        top: -110px; /* 向上移，隐藏顶部导航 */
+        top: -120px;
         left: 0;
         width: 100%;
-        height: 700px; /* 高度大于容器，超出被裁剪 */
+        height: 700px;
         border: none;
+        /* 确保 iframe 内部也不产生滚动条 */
+        scrolling: "no";
+        overflow: hidden;
       }
     </style>
   </head>
   <body>
     <div class="clip-box">
-      <iframe class="cropped-iframe" src="https://tools.2345.com/rili"></iframe>
+      <iframe
+        class="cropped-iframe"
+        src="https://tools.2345.com/rili"
+        scrolling="no"
+        frameborder="0"></iframe>
     </div>
   </body>
 </html>
